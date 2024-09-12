@@ -63,3 +63,47 @@ class ReaderConfig(Config):
             self._config["pages"] = config["pages"]
             return
         raise KeyError("Path or page keys not found.")
+
+
+class PlotterConfig(Config):
+    """
+    Configuration class for Plotter settings.
+
+    Attributes:
+        _config (dict): A dictionary containing plotter-specific configuration settings, including:
+            - "plot_size" (tuple): The size of the plots (width, height).
+            - "scatter_size" (tuple): The size of the scatter plots (width, height).
+            - "show" (bool): Whether to display the plots.
+            - "path" (str, optional): The file path for saving plot images.
+            - "colormap" (str, optional): The desired Matplotlib colormap.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._config = {
+            "figsize": (10,10),
+            "path": None,
+            "show": True,
+            "colormap": "viridis"
+        }
+
+    def set_config(self, figsize=None, show=None, path=None, colormap=None):
+        """
+        Sets the plotter configuration with the specified parameters.
+
+        Args:
+            figsize (tuple, optional): The size of the plots (width, height).
+            show (bool, optional): Whether to show the plots.
+            path (str, optional): The file path for saving plot images.
+            colormap (str, optional): The desired Matplotlib colormap.
+        """
+        logger.debug(f"Plotter Config: {figsize}, {show}, {path}, {colormap}")
+        if figsize:
+            self._config["scatter_size"] = figsize
+        if show is not None:
+            self._config["show"] = show
+        if path:
+            self._config["path"] = path
+        if colormap:
+            self._config["colormap"] = colormap
+

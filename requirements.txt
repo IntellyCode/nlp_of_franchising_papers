@@ -1,3 +1,4 @@
 spaCy
-matplotlib
+matplotlib~=3.9.2
 pymupdf
+numpy~=1.26.4
