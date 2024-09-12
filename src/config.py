@@ -54,13 +54,13 @@ class ReaderConfig(Config):
         super().__init__()
         self._config = {
             "path": None,
-            "pages": (None, None)
+            "title_pages": []
         }
 
     def set_config(self, config: dict):
-        if "path" in config and "pages" in config:
+        if "path" in config and "title_pages" in config:
             self._config["path"] = config["path"]
-            self._config["pages"] = config["pages"]
+            self._config["title_pages"] = config["title_pages"]
             return
         raise KeyError("Path or page keys not found.")
 
