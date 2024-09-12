@@ -44,7 +44,7 @@ def compress_linear(values: np.array) -> np.array:
     normalized_values = (values - min_value) / (max_value - min_value)
 
     # Scale to the range [1, 5]
-    compressed_values = 2.5 + 4 * normalized_values
+    compressed_values = 3.5 + 4 * normalized_values
     return compressed_values
 
 
