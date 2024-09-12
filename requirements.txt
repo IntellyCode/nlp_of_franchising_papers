@@ -1,0 +1,3 @@
+spaCy
+matplotlib
+pymupdf
