@@ -1,5 +1,4 @@
 spaCy
-matplotlib~=3.9.2
+matplotlib
 pymupdf
 numpy~=1.26.4
-pillow~=10.4.0
