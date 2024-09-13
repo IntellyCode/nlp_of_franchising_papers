@@ -1,4 +1,4 @@
-import fitz
+import pymupdf as fitz
 from src.config import ReaderConfig
 import numpy as np
 
