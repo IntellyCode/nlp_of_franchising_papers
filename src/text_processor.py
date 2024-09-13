@@ -2,7 +2,7 @@ import spacy
 from spacy.language import Language
 from spacy.tokens import Doc
 from typing import List, Optional
-from bag_of_words import BagOfWords
+from src.bag_of_words import BagOfWords
 
 
 class Processor:

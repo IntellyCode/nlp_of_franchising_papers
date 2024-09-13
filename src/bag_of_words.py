@@ -17,7 +17,7 @@ class BagOfWords:
             word_frequencies: Dict[str, int] = {}
             for token in self._doc:
                 if not token.is_space:
-                    word = token.text.lower()
+                    word = token.lemma_.lower()
                     if word in word_frequencies:
                         word_frequencies[word] += 1
                     else:

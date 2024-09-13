@@ -1,5 +1,5 @@
 import fitz
-from config import ReaderConfig
+from src.config import ReaderConfig
 import numpy as np
 
 

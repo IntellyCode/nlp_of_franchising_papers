@@ -1,10 +1,10 @@
-from config import PlotterConfig
+from src.config import PlotterConfig
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import math
 from typing import List, Tuple
-from util import compress_linear
+from src.util import compress_linear
 from PIL import ImageFont
 logger = logging.getLogger("WFM.Plotter")
 
