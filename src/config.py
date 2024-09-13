@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from typing import Optional
 logger = logging.getLogger("RS.Config")
 
 
@@ -54,12 +55,13 @@ class ReaderConfig(Config):
         super().__init__()
         self._config = {
             "path": None,
-            "title_pages": []
         }
 
-    def set_config(self, config: dict):
-        if "path" in config and "title_pages" in config:
-            self._config["path"] = config["path"]
-            self._config["title_pages"] = config["title_pages"]
+    def set_config(self, path: Optional[str] = None):
+        if path:
+            self._config["path"] = path
             return
-        raise KeyError("Path or page keys not found.")
+        raise KeyError("Path key not found in the configuration.")
+
+    def get_path(self) -> Optional[str]:
+        return self._config.get("path")
