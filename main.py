@@ -1,34 +1,34 @@
 from src.config import ReaderConfig, PlotterConfig
-from src.bag_of_words import BagOfWords
 from src.data_plotting import BubblePlotter
-from src.text_extractor import Reader
+from src.text_extractor import PdfReader
 from src.text_processor import Processor
+from src.keywords import business_terms
 
-config = {
-        "path": "./data/2005 ISOF Cpnference Papers.pdf",
-        "title_pages": [1,38, 70, 115, ]
-    }
-reader_config = ReaderConfig()
-reader_config.set_config(config)
-
-reader = Reader(reader_config)
-text = reader.read_papers()
-
+paths = ["./data/2004 ISOF Conference Papers.pdf"]
 processor = Processor()
-tags = ["ADP","AUX","CCONJ","DET","INTJ","NUM","PART","PRON","PUNCT","SCONJ","SYM","X"]
-filtered_text = processor.exclude_tokens_by_pos(text, tags)
-bow = BagOfWords(filtered_text)
-frequencies = bow.extract_frequencies()
-sorted_frequencies = sorted(frequencies.items(), key=lambda x: x[1], reverse=True)
-print(sorted_frequencies)
-"""
-sorted_frequencies = [item for item in sorted_frequencies if item[0] != "-"]
+tags = ["ADP", "AUX", "CCONJ", "DET", "INTJ", "NUM", "PART", "PRON", "PUNCT", "SCONJ", "SYM", "X"]
+keywords = business_terms
+matcher = processor.create_matcher(keywords)
+for path in paths:
+    print(path)
+    reader_config = ReaderConfig()
+    reader_config.set_config(path=path)
 
-first_four = sorted_frequencies[:4]
-s = 0
-for _, f in first_four:
-    s += f
+    reader = PdfReader(reader_config)
+    try:
+        reader.open()
+    except Exception as e:
+        print(e)
+        continue
+    terms = {
 
-sorted_frequencies = [("franchise", s)] + sorted_frequencies[4:20]
-"""
+    }
+    page_count = len(reader)
+    for page_num, page in reader.read():
+        # print(f"Progress: {round(page_num/page_count*100)}")
+        filtered_text = processor.exclude_tokens_by_pos(page.get_text(), tags)
+        terms = processor.extract_keywords(filtered_text, matcher,terms)
 
+    reader.close()
+    sorted_frequencies = sorted(terms.items(), key=lambda x: x[1], reverse=True)
+    print(sorted_frequencies[0:100])

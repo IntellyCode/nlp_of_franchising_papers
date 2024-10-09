@@ -3,9 +3,25 @@ from spacy.language import Language
 from spacy.tokens import Doc
 from typing import List, Optional
 from src.bag_of_words import BagOfWords
+from spacy.matcher import PhraseMatcher
+from collections import defaultdict
+from typing import Tuple, Any, List, Dict
 
 
 class Processor:
+    @staticmethod
+    def extract_keywords(doc: Doc, matcher: PhraseMatcher, terms: Dict) -> Dict:
+        matches = matcher(doc)
+
+        for match_id, start, end in matches:
+            span = doc[start:end]
+            if span.text.lower() not in terms:
+                terms[span.text.lower()] = 1
+            else:
+                terms[span.text.lower()] += 1
+
+        return terms
+
     def __init__(self, model_name: str = 'en_core_web_sm') -> None:
         """
         Initializes the Processor with a specified spaCy language model.
@@ -33,6 +49,12 @@ class Processor:
         # Process the text using the spaCy language model
         doc = self.nlp(text)
         return doc
+
+    def create_matcher(self, keywords: List[str]) -> PhraseMatcher:
+        matcher = PhraseMatcher(self.nlp.vocab, attr="LOWER")
+        patterns = [self.nlp(text) for text in keywords]
+        matcher.add("DOMAIN_TERMS", patterns)
+        return matcher
 
     def filter_tokens_by_pos(self, text: str, pos_tag: str) -> List[str]:
         """
