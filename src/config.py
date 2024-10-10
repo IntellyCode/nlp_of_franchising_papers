@@ -109,3 +109,10 @@ class PlotterConfig(Config):
         if colormap:
             self._config["colormap"] = colormap
 
+
+class ProcessorConfig(Config):
+    def set_config(self, config: dict):
+        if "capitalise" not in config:
+            config["capitalise"] = False
+
+        self._config["capitalise"] = config["capitalise"]

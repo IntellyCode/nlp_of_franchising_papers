@@ -2,3 +2,5 @@ spaCy
 matplotlib
 pymupdf
 numpy~=1.26.4
+gensim
+scikit-learn

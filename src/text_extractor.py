@@ -25,7 +25,7 @@ class PdfReader:
         :param config: A dictionary containing configuration settings.
         :raises KeyError: If required keys are missing in the config.
         """
-        self.config.set_config(config)
+        self.config.set_config(config.get("path"))
 
     def open(self):
         """

@@ -1,28 +1,12 @@
 import spacy
 from spacy.language import Language
-from spacy.tokens import Doc
-from typing import List, Optional
-from src.bag_of_words import BagOfWords
-from spacy.matcher import PhraseMatcher
-from collections import defaultdict
-from typing import Tuple, Any, List, Dict
+from typing import List
+from src.config import ProcessorConfig
 
 
 class Processor:
-    @staticmethod
-    def extract_keywords(doc: Doc, matcher: PhraseMatcher, terms: Dict) -> Dict:
-        matches = matcher(doc)
 
-        for match_id, start, end in matches:
-            span = doc[start:end]
-            if span.text.lower() not in terms:
-                terms[span.text.lower()] = 1
-            else:
-                terms[span.text.lower()] += 1
-
-        return terms
-
-    def __init__(self, model_name: str = 'en_core_web_sm') -> None:
+    def __init__(self, config: ProcessorConfig, model_name: str = 'en_core_web_sm') -> None:
         """
         Initializes the Processor with a specified spaCy language model.
 
@@ -31,93 +15,60 @@ class Processor:
         """
         try:
             self.nlp: Language = spacy.load(model_name)
+            self._raw_text = None
+            self._doc = None
+            self._config: ProcessorConfig = config
             print(f"Loaded spaCy model: {model_name}")
         except Exception as e:
             print(f"Error loading spaCy model '{model_name}': {e}")
 
-    def _process_text(self, text: str) -> Optional[Doc]:
+    def get_doc(self):
         """
-        Processes the input text using the spaCy language model.
-
-        :param text: The input text to be processed.
-        :return: A spaCy Doc object containing the processed text, or None if text is empty.
+        :return doc: Spacy Document object
         """
-        if not text:
-            print("No text provided for processing.")
-            return None
+        if self._doc is None:
+            raise Exception("Spacy Document is not loaded")
+        return self._doc
 
-        # Process the text using the spaCy language model
-        doc = self.nlp(text)
-        return doc
-
-    def create_matcher(self, keywords: List[str]) -> PhraseMatcher:
-        matcher = PhraseMatcher(self.nlp.vocab, attr="LOWER")
-        patterns = [self.nlp(text) for text in keywords]
-        matcher.add("DOMAIN_TERMS", patterns)
-        return matcher
-
-    def filter_tokens_by_pos(self, text: str, pos_tag: str) -> List[str]:
+    def get_text(self):
         """
-        Filters tokens from the processed text based on the specified POS tag.
-
-        :param text: The input text to be processed and filtered.
-        :param pos_tag: The part-of-speech tag to filter tokens by (e.g., 'NOUN', 'VERB').
-        :return: A list of token texts with the specified POS tag.
+        :return raw_text: Spacy Document object
         """
-        doc = self._process_text(text)
-        if doc:
-            filtered_tokens: List[str] = [token.text for token in doc if token.pos_ == pos_tag]
-            return filtered_tokens
-        return []
+        if self._raw_text is None:
+            raise Exception("Spacy Document is not loaded")
+        return self._raw_text
 
-    def exclude_tokens_by_pos(self, text: str, pos_tags: List[str]) -> Optional[Doc]:
+    def set_text(self, raw_text):
+        self._raw_text = raw_text
+        self._doc = self.nlp(raw_text)
+
+    def process(self) -> List[str]:
         """
-        Excludes tokens with the specified POS tags from the processed text.
+        Process the Spacy Doc object by performing the following:
+            1. Remove punctuations, numbers, and special characters.
+            2. Remove stop words.
+            3. Lemmatize the remaining tokens.
 
-        :param text: The input text to be processed.
-        :param pos_tags: A list of POS tags to exclude (e.g., ['NOUN', 'VERB']).
-        :return: A spaCy Doc object with tokens that do not have the specified POS tags.
+        :return processed_tokens: List of tokens from the doc.
         """
-        doc = self._process_text(text)
-        if not doc:
-            return None
+        _tokens = []
+        if not self._config.get("capitalise"):
+            f = str.lower
+        else:
+            f = lambda x: x
 
-        # Rebuild text excluding tokens with specified POS tags
-        filtered_text = " ".join(token.text for token in doc if token.pos_ not in pos_tags)
+        for token in self._doc:
+            if not token.is_punct and not token.is_stop and not token.is_digit and token.is_alpha:
+                _tokens.append(f(token.lemma_))
 
-        # Process the filtered text into a new Doc object
-        return self.nlp(filtered_text)
+        return _tokens
 
 
-# Example usage
-if __name__ == "__main__":
-    processor = Processor()  # Initializes with the English model by default
-    text = """
-        Natural Language Processing (NLP) is a subfield of artificial intelligence that focuses on the interaction between computers and humans through natural language. The ultimate goal of NLP is to enable computers to understand, interpret, and respond to human language in a way that is both meaningful and useful. This field combines computational linguistics, which models the structure of human language, with machine learning, deep learning, and statistical methods.
-    
-        NLP encompasses several important tasks such as text classification, sentiment analysis, machine translation, named entity recognition, and speech recognition, among others. For example, text classification is the process of assigning categories or labels to text based on its content. This is widely used in email filtering, where emails are automatically categorized as spam or not spam. Sentiment analysis, on the other hand, is used to determine the sentiment or emotion expressed in a piece of text, which is particularly useful in monitoring social media and customer feedback.
-        
-        One of the key challenges in NLP is dealing with the ambiguity and variability of human language. Words can have multiple meanings depending on the context, and different people can express the same idea in numerous ways. This makes tasks like machine translation particularly difficult because the system must not only understand the literal meaning of the words but also capture the nuances of the original message.
-        
-        Modern NLP techniques rely heavily on deep learning methods, particularly neural networks, which have been shown to perform exceptionally well on a variety of language tasks. Models such as Transformers, including the famous BERT and GPT, have set new benchmarks in many NLP applications. These models use attention mechanisms that allow them to weigh the importance of different parts of the input text, leading to better understanding and generation of language.
-        
-        Another significant aspect of NLP is named entity recognition (NER), which involves identifying and classifying key elements in text into predefined categories such as names of people, organizations, locations, expressions of time, quantities, monetary values, percentages, and more. NER is crucial for information extraction tasks where specific data needs to be pulled out from large volumes of text, such as in legal documents or research papers.
-        
-        Speech recognition, which converts spoken language into text, is another critical component of NLP. It powers various applications, including virtual assistants like Siri and Alexa, dictation software, and transcription services. Achieving high accuracy in speech recognition is challenging due to factors like accents, pronunciation variations, background noise, and homophones.
-        
-        Another emerging area in NLP is conversational AI, which focuses on building systems that can carry on a dialogue with humans. Chatbots and virtual assistants are prime examples of conversational AI. These systems need to understand user inputs, maintain context across multiple exchanges, and generate appropriate responses. They leverage various NLP tasks such as intent recognition, dialogue management, and natural language generation to simulate a human-like conversation.
-        
-        Tokenization, stemming, and lemmatization are fundamental preprocessing steps in NLP. Tokenization involves breaking down text into individual words or phrases, which are the building blocks for further analysis. Stemming reduces words to their root form, while lemmatization goes a step further by reducing words to their base or dictionary form. These steps help standardize the input text, making it easier for models to learn from it.
-        
-        Despite the advancements, NLP still faces many challenges. One major challenge is bias in training data, which can lead to biased models that produce unfair or prejudiced outcomes. Another challenge is the need for vast amounts of labeled data for training supervised models, which can be expensive and time-consuming to obtain. Additionally, language diversity poses a significant hurdle, as most NLP research and tools are centered around English, leaving many other languages underrepresented.
-        
-        As NLP continues to evolve, it is likely to become even more integrated into our daily lives. From improving customer service through chatbots to assisting in medical diagnoses by analyzing patient records, the potential applications of NLP are vast and varied. Researchers are continuously working on making NLP models more efficient, less resource-intensive, and better at understanding the complexities of human language.
-        
-        In conclusion, Natural Language Processing is a rapidly growing field that has made significant strides in recent years. With ongoing advancements in machine learning and deep learning, the capabilities of NLP systems are expanding, bringing us closer to the goal of seamless human-computer communication. However, there is still much work to be done to overcome the challenges and ensure that these technologies are accessible and fair for all.
-    """
-    tags = ["ADP","AUX","CCONJ","DET","INTJ","NUM","PART","PRON","PUNCT","SCONJ","SYM","X"]
-    filtered_text = processor.exclude_tokens_by_pos(text, tags)
-    bow = BagOfWords(filtered_text)
-    dict = bow.extract_frequencies()
-    sorted_dict = sorted(dict.items(), key=lambda x: x[1], reverse=True)
-    print(sorted_dict)
+if __name__ == '__main__':
+    conf = ProcessorConfig()
+    conf.set_config({"capitalise": False})
+    processor = Processor(conf, 'en_core_web_sm')
+    text = "In 2023, Natural Language Processing (NLP) continues to evolve rapidly! Researchers focus on improving models like GPT-4, BERT, and others to achieve state-of-the-art performance in text understanding, generation, & translation. Some challenges in NLP include handling rare words, ambiguous meanings, and training models efficiently (with fewer resources). Popular frameworks, such as TensorFlow, PyTorch, & Hugging Face's Transformers, are used for training massive language models. Can we predict that by 2030, NLP systems will fully understand human emotions? Only time will tell... #AI #NLP #Future"
+    processor.set_text(text)
+    processed_tokens = processor.process()
+    print(processed_tokens)
