@@ -2,6 +2,8 @@ import spacy
 from spacy.language import Language
 from typing import List
 from src.config import ProcessorConfig
+from logging import getLogger
+logger = getLogger("WFM.TextProcessor")
 
 
 class Processor:
@@ -13,14 +15,16 @@ class Processor:
         :param model_name: The name of the spaCy language model to load.
                            Default is 'en_core_web_sm'.
         """
+        logger.info("Initializing Processor with spaCy language model.")
         try:
             self.nlp: Language = spacy.load(model_name)
             self._raw_text = None
             self._doc = None
             self._config: ProcessorConfig = config
-            print(f"Loaded spaCy model: {model_name}")
+
+            logger.debug(f"Loaded spaCy model: {model_name}")
         except Exception as e:
-            print(f"Error loading spaCy model '{model_name}': {e}")
+            logger.critical(f"Error loading spaCy model '{model_name}': {e}")
 
     def get_doc(self):
         """
@@ -41,6 +45,7 @@ class Processor:
     def set_text(self, raw_text):
         self._raw_text = raw_text
         self._doc = self.nlp(raw_text)
+        logger.debug("Setting raw text")
 
     def process(self) -> List[str]:
         """
@@ -60,7 +65,7 @@ class Processor:
         for token in self._doc:
             if not token.is_punct and not token.is_stop and not token.is_digit and token.is_alpha:
                 _tokens.append(f(token.lemma_))
-
+        logger.debug(f"Processed tokens: {_tokens}")
         return _tokens
 
     # TODO:
@@ -69,9 +74,9 @@ class Processor:
 
 if __name__ == '__main__':
     conf = ProcessorConfig()
-    conf.set_config({"capitalise": False})
+    conf.set_config(capitalise=False)
     processor = Processor(conf, 'en_core_web_sm')
-    text = "In 2023, Natural Language Processing (NLP) continues to evolve rapidly! Researchers focus on improving models like GPT-4, BERT, and others to achieve state-of-the-art performance in text understanding, generation, & translation. Some challenges in NLP include handling rare words, ambiguous meanings, and training models efficiently (with fewer resources). Popular frameworks, such as TensorFlow, PyTorch, & Hugging Face's Transformers, are used for training massive language models. Can we predict that by 2030, NLP systems will fully understand human emotions? Only time will tell... #AI #NLP #Future"
+    text = "In 2023, Natural Language Processing (NLP) continues to evolve rapidly! Researchers focus on improving models like GPT-4, BERT, and others to achieve state-of-the-art performance in text understanding, generation, & translation. Some challenges in NLP include handling rare words, ambiguous meanings, and training models efficiently (with fewer resources). Popular frameworks, such as TensorFlow, PyTorch, & Hugging Face's Transformers, are used for training massive language models. Can we predict that by 2030, NLP systems will fully understand human emotions? Only time will tell... #AI #NLP #Future, Russia, Russian"
     processor.set_text(text)
     processed_tokens = processor.process()
     print(processed_tokens)

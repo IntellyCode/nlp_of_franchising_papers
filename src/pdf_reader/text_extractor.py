@@ -1,7 +1,9 @@
 import pymupdf as fitz
 from src.config import ReaderConfig
 from typing import Optional, Generator, Tuple
-from src.page import PaperPage
+from src.pdf_reader.page import PaperPage
+import logging
+logger = logging.getLogger("WFM.PdfReader")
 
 
 class PdfReader:
@@ -9,23 +11,20 @@ class PdfReader:
     A PDF Reader class that manages PDF operations and provides a generator to iterate through pages.
     """
 
-    def __init__(self, config: ReaderConfig):
+    def __init__(self, conf: ReaderConfig):
         """
-        Initialize the PdfReader with a ReaderConfig instance.
-
-        :param config: An instance of ReaderConfig containing configuration settings.
+        Initialize the PdfReader
         """
-        self.config = config
+        self.config = conf
         self.doc: Optional[fitz.Document] = None
+        logger.info("PdfReader initialized")
 
-    def set_config(self, config: dict):
+    def set_config(self, **kwargs):
         """
         Update the ReaderConfig with a new configuration dictionary.
-
-        :param config: A dictionary containing configuration settings.
-        :raises KeyError: If required keys are missing in the config.
         """
-        self.config.set_config(config.get("path"))
+        self.config.set_config(kwargs["path"])
+        logger.debug("PdfReader config set")
 
     def open(self):
         """
@@ -35,13 +34,13 @@ class PdfReader:
         :raises FileNotFoundError: If the specified PDF file does not exist.
         :raises Exception: For other errors during opening the PDF.
         """
-        path = self.config.get_path()
+        path = self.config.get("path")
+        logger.debug(f"Opening file: {path}")
         if not path:
-            raise ValueError("PDF path is not set in the configuration.")
 
+            raise ValueError("PDF path is not set in the configuration.")
         try:
             self.doc = fitz.open(path)
-            print(f"Opened PDF file: {path}")
         except FileNotFoundError:
             raise FileNotFoundError(f"The file at path '{path}' was not found.")
         except Exception as e:
@@ -55,7 +54,7 @@ class PdfReader:
         """
         if self.doc:
             self.doc.close()
-            print("Closed the PDF file.")
+            logger.debug("PdfReader closed")
             self.doc = None
         else:
             raise ValueError("No PDF file is currently opened.")
@@ -72,11 +71,11 @@ class PdfReader:
 
         for page_num in range(self.doc.page_count):
             try:
-                fitz_page = self.doc.load_page(page_num)  # 0-based indexing
+                fitz_page = self.doc.load_page(page_num)
                 paper_page = PaperPage(fitz_page)
-                yield page_num + 1, paper_page  # Yielding 1-based page number
+                yield page_num + 1, paper_page
             except Exception as e:
-                print(f"An error occurred while reading page {page_num + 1}: {e}")
+                logger.warning(f"An error occurred while reading the page {page_num+1}: {e}")
 
     def __len__(self):
         if self.doc:
@@ -97,16 +96,6 @@ class PdfReader:
         if self.doc:
             self.close()
 
-
-if __name__ == "__main__":
-    config = ReaderConfig()
-    config.set_config("../data/2004 ISOF Conference Papers.pdf")
-    reader = PdfReader(config)
-    reader.open()
-    for page_num, page in reader.read():
-        if page_num > 5:
-            continue
-        print(page.get_text())
 
 
 
