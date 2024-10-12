@@ -102,3 +102,4 @@ if __name__ == '__main__':
     bow.compress(threshold=0.2)
     print("DTM after compression:")
     print(bow)
+    bow.identify_n_grams(n=3)

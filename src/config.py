@@ -116,3 +116,16 @@ class ProcessorConfig(Config):
             config["capitalise"] = False
 
         self._config["capitalise"] = config["capitalise"]
+
+
+class LdaConfig(Config):
+    def set_config(self, config: dict):
+        if "alpha" not in config:
+            raise KeyError("Alpha key not found in the configuration.")
+        if "beta" not in config:
+            raise KeyError("Beta key not found in the configuration.")
+        if "random_state" not in config:
+            config["random_state"] = 42
+        if "extremes" not in config or isinstance(config["extremes"],tuple or list):
+            config["extremes"] = (2, 0.5)
+        self._config = config

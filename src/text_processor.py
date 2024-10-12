@@ -63,6 +63,9 @@ class Processor:
 
         return _tokens
 
+    # TODO:
+    # Implement Bigram and Trigram detection
+
 
 if __name__ == '__main__':
     conf = ProcessorConfig()
