@@ -3,6 +3,7 @@ from src.pdf_reader.text_extractor import PdfReader
 from src.processor.text_processor import Processor
 from src.processor.lda import Lda
 import logging
+from datetime import datetime
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 config = ReaderConfig()
@@ -31,5 +32,7 @@ for text in texts:
     lat_dir_all.append_to_dtm(processor.process())
 
 lat_dir_all.train_model()
-
-lat_dir_all.visualise("lda_visualization.html")
+try:
+    lat_dir_all.visualise(f"lda_visualization_{datetime.now()}.html")
+except TypeError as e:
+    lat_dir_all.visualise(f"lda_visualization_{datetime.now()}.html")

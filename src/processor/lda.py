@@ -81,6 +81,6 @@ class Lda:
         :return:
         """
         vis = pyLDAvis.gensim_models.prepare(self._model, self._corpus,
-                                             self._dictionary)
+                                             self._dictionary, mds="mmds")
         pyLDAvis.save_html(vis, file_path)
         logger.info(f"Visualizing LDA model at path: {file_path}")

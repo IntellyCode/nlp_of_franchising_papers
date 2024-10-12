@@ -5,7 +5,7 @@ from typing import Optional
 class LdaConfig(Config):
     def set_config(self,
                    no_below: int = 2,
-                   no_above: float = 0.5,
+                   no_above: float = 0.3,
                    num_topics: int = 20,
                    chunksize: int = 30,
                    passes: int = 20,

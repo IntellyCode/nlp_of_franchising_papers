@@ -62,14 +62,16 @@ class Processor:
         else:
             f = lambda x: x
 
+        _text = ""
         for token in self._doc:
             if not token.is_punct and not token.is_stop and not token.is_digit and token.is_alpha:
-                _tokens.append(f(token.lemma_))
+                _text += f(token.lemma_) + ' '
+
+        doc = self.nlp(_text)
+        for chunk in doc.noun_chunks:
+            _tokens.append(f(chunk.text))
         logger.debug(f"Processed tokens: {_tokens}")
         return _tokens
-
-    # TODO:
-    # Implement Bigram and Trigram detection
 
 
 if __name__ == '__main__':
