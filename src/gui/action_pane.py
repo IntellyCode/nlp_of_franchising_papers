@@ -1,4 +1,4 @@
-from src.gui.pane import Pane
+from .pane import Pane
 import tkinter as tk
 from typing import Callable, List
 

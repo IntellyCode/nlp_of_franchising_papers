@@ -1,5 +1,7 @@
 import tkinter as tk
-from src.gui.pane import Pane
+from typing import Optional
+
+from .pane import Pane
 from tkinter import ttk
 
 
@@ -17,7 +19,7 @@ class ProgressBar(Pane):
         self._progressbar = ttk.Progressbar(master=parent, length=600,value=0)
         self._progressbar.pack(side=tk.LEFT, fill=tk.X, expand=False)
 
-    def update(self, progress: float) -> None:
+    def update(self, progress: float) -> Optional[float]:
         """
         Update the progress display based on the provided progress value.
 
@@ -25,7 +27,7 @@ class ProgressBar(Pane):
         :return: None
         """
         if progress < 0 or progress > 100:
-            raise ValueError("Progress value must be between 0 and 100.")
+            return progress
         if progress + self._progressbar['value'] >= 100:
             self._progressbar['value'] = 100
         else:

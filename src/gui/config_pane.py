@@ -1,5 +1,5 @@
-from src.gui.pane import Pane
-from input_field import InputField
+from .pane import Pane
+from .input_field import InputField
 import tkinter as tk
 from typing import List
 

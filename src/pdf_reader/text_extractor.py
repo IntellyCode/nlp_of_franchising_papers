@@ -1,46 +1,39 @@
 import pymupdf as fitz
 from src.config import ReaderConfig
-from typing import Optional, Generator, Tuple
 from src.pdf_reader.page import PaperPage
+from typing import Generator, Tuple
 import logging
+
 logger = logging.getLogger("WFM.PdfReader")
 
 
 class PdfReader:
     """
-    A PDF Reader class that manages PDF operations and provides a generator to iterate through pages.
+    Manages PDF operations and provides a generator to iterate through pages.
     """
 
-    def __init__(self, conf: ReaderConfig):
-        """
-        Initialize the PdfReader
-        """
-        self.config = conf
-        self.doc: Optional[fitz.Document] = None
+    def __init__(self, config: ReaderConfig):
+        self._config = config
+        self._doc = None
         logger.info("PdfReader initialized")
 
-    def set_config(self, **kwargs):
+    def set_path(self, path: str):
         """
-        Update the ReaderConfig with a new configuration dictionary.
+        Update the configuration path.
         """
-        self.config.set_config(kwargs["path"])
-        logger.debug("PdfReader config set")
+        self._config.set_config(path)
+        logger.debug("PdfReader config updated")
 
     def open(self):
         """
-        Open the PDF file specified in the configuration.
-
-        :raises ValueError: If the path is not set in the configuration.
-        :raises FileNotFoundError: If the specified PDF file does not exist.
-        :raises Exception: For other errors during opening the PDF.
+        Open the PDF specified in the configuration path.
         """
-        path = self.config.get("path")
-        logger.debug(f"Opening file: {path}")
-        if not path:
-
+        if not self._config.get("path"):
             raise ValueError("PDF path is not set in the configuration.")
+        path = self._config.get("path")
         try:
-            self.doc = fitz.open(path)
+            self._doc = fitz.open(path)
+            logger.debug(f"PDF opened: {path}")
         except FileNotFoundError:
             raise FileNotFoundError(f"The file at path '{path}' was not found.")
         except Exception as e:
@@ -48,54 +41,41 @@ class PdfReader:
 
     def close(self):
         """
-        Close the currently opened PDF file.
-
-        :raises ValueError: If no PDF is currently opened.
+        Close the open PDF document, if any.
         """
-        if self.doc:
-            self.doc.close()
-            logger.debug("PdfReader closed")
-            self.doc = None
+        if self._doc:
+            self._doc.close()
+            self._doc = None
+            logger.debug("PDF closed")
         else:
-            raise ValueError("No PDF file is currently opened.")
+            raise ValueError("No PDF file is currently open.")
 
     def read(self) -> Generator[Tuple[int, PaperPage], None, None]:
         """
-        Generator to iterate through the pages of the PDF.
-
-        :yield: A tuple containing the page number (1-based) and a PaperPage object.
-        :raises ValueError: If the PDF is not opened.
+        Generator to yield each page of the open PDF as a PaperPage object.
         """
-        if not self.doc:
-            raise ValueError("PDF file is not opened. Call the 'open' method first.")
+        self._ensure_document_open()
 
-        for page_num in range(self.doc.page_count):
+        for page_num in range(self._doc.page_count):
             try:
-                fitz_page = self.doc.load_page(page_num)
-                paper_page = PaperPage(fitz_page)
-                yield page_num + 1, paper_page
+                fitz_page = self._doc.load_page(page_num)
+                yield page_num + 1, PaperPage(fitz_page)
             except Exception as e:
-                logger.warning(f"An error occurred while reading the page {page_num+1}: {e}")
+                logger.warning(f"Error reading page {page_num + 1}: {e}")
+
+    def _ensure_document_open(self):
+        """
+        Ensure the document is open, otherwise raise an error.
+        """
+        if not self._doc:
+            raise ValueError("PDF file is not opened. Call 'open' first.")
 
     def __len__(self):
-        if self.doc:
-            return len(self.doc)
-        return 0
+        return len(self._doc) if self._doc else 0
 
     def __enter__(self):
-        """
-        Enable usage of PdfReader with the 'with' statement.
-        """
         self.open()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Ensure the PDF is closed when exiting the 'with' block.
-        """
-        if self.doc:
-            self.close()
-
-
-
-
+        self.close()

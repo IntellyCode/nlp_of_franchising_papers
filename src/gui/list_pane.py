@@ -1,4 +1,4 @@
-from src.gui.pane import Pane
+from .pane import Pane
 import tkinter as tk
 from typing import List
 
@@ -20,13 +20,14 @@ class ListPane(Pane):
         :param path: The associated path for the item.
         """
 
-        def __init__(self, text: str, path: str) -> None:
+        def __init__(self, text: str, path: str, index: int) -> None:
             self.text = text
             self.path = path
+            self.index = index
 
         def __str__(self) -> str:
             # Represent the item by its text for displaying in the listbox
-            return self.text
+            return str(self.index+1)+". "+self.text
 
     def __init__(self, parent: tk.Widget, items: List[str], paths: List[str], **kwargs) -> None:
         super().__init__(parent, **kwargs)
@@ -37,9 +38,14 @@ class ListPane(Pane):
         self.listbox.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.listbox.yview)
         self.items = []  # List of _Item instances
-        self.populate_list(items, paths)
+        self.init_items(items, paths)
+        self._populate_list()
 
-    def populate_list(self, items: List[str], paths: List[str]) -> None:
+    def _populate_list(self):
+        for item in self.items:
+            self.listbox.insert(tk.END, item)
+
+    def init_items(self, items: List[str], paths: List[str]) -> None:
         """
         Populate the listbox with items and paths.
 
@@ -47,13 +53,9 @@ class ListPane(Pane):
         :param paths: List of associated paths for each item.
         :return: None
         """
-        if len(items) != len(paths):
-            raise ValueError("Number of items does not match the number of paths.")
-
-        for text, path in zip(items, paths):
-            item = self._Item(text, path)
+        for index, text, path in enumerate(zip(items, paths)):
+            item = self._Item(text, path, index)
             self.items.append(item)
-            self.listbox.insert(tk.END, item)
 
     def get_selected_item(self) -> str:
         """
@@ -89,7 +91,8 @@ class ListPane(Pane):
         """
         # Check for duplicates based on text only
         if text not in [item.text for item in self.items]:
-            item = self._Item(text, path)
+
+            item = self._Item(text, path,len(self.items))
             self.items.append(item)
             self.listbox.insert(tk.END, item)
 
@@ -104,6 +107,10 @@ class ListPane(Pane):
             index = selected_indices[0]
             self.listbox.delete(index)
             del self.items[index]
+            self.listbox.delete(0, tk.END)
+            for index, item in enumerate(self.items):
+                item.index = index
+            self._populate_list()
 
     def get_items(self) -> List[tuple]:
         """
@@ -112,3 +119,11 @@ class ListPane(Pane):
         :return: A list of tuples containing text and path of each item.
         """
         return [(item.text, item.path) for item in self.items]
+
+    def clear_list(self):
+        """
+        Clear the list
+        :return:
+        """
+        self.listbox.delete(0, tk.END)
+        self.items = []

@@ -1,11 +1,12 @@
 import tkinter as tk
-from pane import Pane
-from directory_tree import DirectoryTree
-from progress_bar import ProgressBar
-from config_pane import ConfigPane
-from list_pane import ListPane
-from action_pane import ActionPane
+from .pane import Pane
+from .directory_tree import DirectoryTree
+from .progress_bar import ProgressBar
+from .config_pane import ConfigPane
+from .list_pane import ListPane
+from .action_pane import ActionPane
 from tkinter import messagebox
+from typing import Tuple, Dict, List, Callable
 
 
 class Gui:
@@ -13,69 +14,68 @@ class Gui:
     Main GUI class that brings together all components.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, start_function: Callable):
         """
         Initialize the GUI application.
 
-        :return: None
         """
 
-        self.root = tk.Tk()
-        self.root.title("Topic Modeling")
-        self.root.geometry("1000x600")
-        self.root.resizable(False, False)
-        self.create_widgets()
-        self.run()
+        # Initialised Later
+        self._paned_window = None
+        self._left_pane = None
+        self._directory_tree = None
+        self._progress_bar = None
+        self._right_pane = None
+        self._config_pane = None
+        self._list_pane = None
+        self._action_pane = None
 
+        # Initialised now
+        self._start_function = start_function
+        self._root = tk.Tk()
+        self._root.title("Topic Modeling")
+        self._root.geometry("1000x600")
+        self._root.resizable(False, False)
+        self.create_panes()
 
-    def create_widgets(self) -> None:
+    def create_panes(self):
         """
         Set up the main widgets and layout of the GUI.
-
-        :return: None
         """
         self.create_paned_window()
         self.create_left_pane()
         self.create_right_pane()
 
-    def create_paned_window(self) -> None:
+    def create_paned_window(self):
         """
         Create the main PanedWindow to split the GUI into left and right sections.
-
-        :return: None
         """
-        self.paned_window = tk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        self.paned_window.pack(fill=tk.BOTH, expand=1)
+        self._paned_window = tk.PanedWindow(self._root, orient=tk.HORIZONTAL)
+        self._paned_window.pack(fill=tk.BOTH, expand=1)
 
-    def create_left_pane(self) -> None:
+    def create_left_pane(self):
         """
-        Create the left pane containing the directory tree.
-
-        :return: None
+        Create the left pane containing the directory tree and Progress Bar
         """
-        self.left_pane = Pane(self.paned_window,padx=5, pady=5)
-        self.paned_window.add(self.left_pane.get_frame(), minsize=600)
-        self.directory_tree = DirectoryTree(self.left_pane.get_frame(), on_pdf_click=self.on_pdf_click)
-        self.progress_bar = ProgressBar(self.left_pane.get_frame())
+        self._left_pane = Pane(self._paned_window, padx=5, pady=5)
+        self._paned_window.add(self._left_pane.get_frame(), minsize=600)
 
-    def on_pdf_click(self, name: str, path:str) -> None:
+        self._directory_tree = DirectoryTree(self._left_pane.get_frame(), on_pdf_click=self.on_pdf_click)
+        self._progress_bar = ProgressBar(self._left_pane.get_frame())
+
+    def on_pdf_click(self, name: str, path: str):
         """
         Callback function when a PDF is clicked.
-
-        :return: None
         """
         label = name[3:].strip(".pdf")
         self.add_group(label, path)
 
-
-    def create_right_pane(self) -> None:
+    def create_right_pane(self):
         """
         Create the right pane, including config pane, list pane, and action pane.
-
-        :return: None
         """
-        self.right_pane = Pane(self.paned_window)
-        self.paned_window.add(self.right_pane.get_frame(),minsize=400)
+        self._right_pane = Pane(self._paned_window)
+        self._paned_window.add(self._right_pane.get_frame(), minsize=400)
 
         # Top: ConfigPane
         config_inputs = [
@@ -88,61 +88,73 @@ class Gui:
             {'label': 'eval_every', 'default': "None"},
             {'label': 'alpha', 'default': "auto"},
             {'label': 'eta', 'default': "auto"},
+            {'label': 'output_dir', 'default': ''}
         ]
-        self.config_pane = ConfigPane(self.right_pane.get_frame(), config_inputs, padx=5, pady=5)
-        self.config_pane.get_frame().pack(fill=tk.X)
+        self._config_pane = ConfigPane(self._right_pane.get_frame(), config_inputs, padx=5, pady=5)
+        self._config_pane.get_frame().pack(fill=tk.X)
 
         # Middle: ListPane
-        self.list_pane = ListPane(self.right_pane.get_frame(), items=[],paths=[], padx=5, pady=5)
-        self.list_pane.get_frame().pack(fill=tk.BOTH, expand=1)
-        self.list_pane.listbox.bind("<Key>", self.on_key_press)
+        self._list_pane = ListPane(self._right_pane.get_frame(), items=[], paths=[], padx=5, pady=5)
+        self._list_pane.get_frame().pack(fill=tk.BOTH, expand=1)
+        self._list_pane.listbox.bind("<Key>", self.on_key_press)
 
         # Bottom: ActionPane
         actions = [
-            {'text': 'Start', 'command': self.start_action}
+            {'text': 'Start', 'command': self.start_action},
+            {'text': 'Clear', 'command': self.clear_list}
         ]
-        self.action_pane = ActionPane(self.right_pane.get_frame(), actions, padx=5, pady=5)
-        self.action_pane.get_frame().pack(fill=tk.X)
+        self._action_pane = ActionPane(self._right_pane.get_frame(), actions, padx=5, pady=5)
+        self._action_pane.get_frame().pack(fill=tk.X)
 
     def on_key_press(self, event):
         if event.keysym == "BackSpace" or event.keysym == "Delete":
             self.delete_group()
 
-    def add_group(self, name: str, path: str) -> None:
+    def add_group(self, name: str, path: str):
         """
         Add a new group to the list.
-
-        :return: None
         """
-        self.list_pane.add_item(name, path)
+        self._list_pane.add_item(name, path)
 
-    def delete_group(self) -> None:
+    def delete_group(self):
         """
         Delete the selected group.
-
-        :return: None
         """
-        selected_item = self.list_pane.get_selected_item()
+        selected_item = self._list_pane.get_selected_item()
         if selected_item:
-            self.list_pane.delete_selected_item()
+            self._list_pane.delete_selected_item()
         else:
             messagebox.showwarning("Delete Group", "Please select a group to delete.")
 
-    def start_action(self) -> None:
+    def clear_list(self):
+        """
+        Clear the list.
+        """
+        self._list_pane.clear_list()
+
+    def start_action(self):
         """
         Placeholder function for the 'Start' button action.
-
-        :return: None
         """
-        messagebox.showinfo("Values", f"Config Values: \n {self.config_pane.get_values()}\n Files: \n {self.list_pane.get_items()}")
+        self._start_function()
 
-    def run(self) -> None:
+    def get_data(self) -> Tuple[Dict, List[str], Dict]:
+        """
+        Function to get the data from the GUI
+
+        :return: A tuple of the configuration and file paths
+        """
+        original_dict = self._config_pane.get_values()
+        main_dict = {k: v for k, v in original_dict.items() if k != "output_dir"}
+        output_dict = {k: v for k, v in original_dict.items() if k == "output_dir"}
+        output_dict["viewing_dir"] = self._directory_tree.get_viewing_directory()
+        return main_dict, self._list_pane.get_items(), output_dict
+
+    def run(self):
         """
         Run the main event loop of the Tkinter GUI.
-
-        :return: None
         """
-        self.root.mainloop()
+        self._root.mainloop()
 
     def show_error(self, error: str):
         """
@@ -153,6 +165,15 @@ class Gui:
         """
         messagebox.showwarning("Error", error)
 
+    def update_bar(self, progress: float):
+        if progress < 0:
+            self._progress_bar.clear()
+        else:
+            self._progress_bar.update(progress)
+
 
 if __name__ == "__main__":
-    gui = Gui()
+    def start():
+        print("Test")
+    gui = Gui(start)
+    gui.run()

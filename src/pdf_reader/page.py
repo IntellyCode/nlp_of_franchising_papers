@@ -1,5 +1,4 @@
 import pymupdf as fitz
-from typing import List, Any, Generator
 from logging import getLogger
 logger = getLogger("WFM.Page")
 
