@@ -1,6 +1,7 @@
 import tkinter as tk
 from pane import Pane
 from directory_tree import DirectoryTree
+from progress_bar import ProgressBar
 from config_pane import ConfigPane
 from list_pane import ListPane
 from action_pane import ActionPane
@@ -55,6 +56,7 @@ class Gui:
         self.left_pane = Pane(self.paned_window,padx=5, pady=5)
         self.paned_window.add(self.left_pane.get_frame(), minsize=600)
         self.directory_tree = DirectoryTree(self.left_pane.get_frame(), on_pdf_click=self.on_pdf_click)
+        self.progress_bar = ProgressBar(self.left_pane.get_frame())
 
     def on_pdf_click(self, name: str, path:str) -> None:
         """
