@@ -69,7 +69,13 @@ class Processor:
 
         doc = self.nlp(_text)
         for chunk in doc.noun_chunks:
-            _tokens.append(f(chunk.text))
+            words = chunk.text.split(" ")
+            if not len(words) > 3:
+                if len(words) > 1 and len(chunk.text) > 5:
+                    _tokens.append(f(chunk.text))
+                elif len(words) <= 1:
+                    _tokens.append(f(chunk.text))
+
         logger.debug(f"Processed tokens: {_tokens}")
         return _tokens
 
