@@ -1,5 +1,5 @@
-spaCy~=3.7.6
-pymupdf~=1.24.10
-numpy~=1.26.4
-gensim~=4.3.3
+spaCy
+pymupdf
+numpy
+gensim
 pyldavis

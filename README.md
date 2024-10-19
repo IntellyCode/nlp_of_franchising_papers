@@ -16,14 +16,21 @@ To get started, follow these steps:
    ```bash
    git clone <repository_url>
    ```
+2. **Python Version**: Ensure you have python version 3.12 or later installed on your device. 
 
-2. **Install Dependencies**: Navigate to the project directory and install the required packages using pip:
+
+3. **Install Dependencies**: Navigate to the project directory and install the required packages using pip:
 
    ```bash
    pip install -r requirements.txt
    ```
+4. **Install NLP Library**: Download the spacy language model
 
-3. **Run the Main File**: Locate the main file in the project and execute it in the Python interpreter or run it directly:
+   ```bash
+   python -m spacy download en_core_web_sm
+   ```
+
+5. **Run the Main File**: Locate the main file in the project and execute it in the Python interpreter or run it directly:
 
    ```bash
    python main.py
