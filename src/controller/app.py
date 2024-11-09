@@ -1,5 +1,5 @@
 from typing import Optional
-from src.config import ReaderConfig, ProcessorConfig, LdaConfig
+from src.config import ReaderConfig, ProcessorConfig, LdaConfig, special_character
 from src.processor import Processor, Lda
 from src.pdf_reader import PdfReader
 
@@ -61,8 +61,5 @@ class App:
             self.gui.show_error("Something went wrong: " + str(e))
             return None
 
-        # Read and return text from PDF
-        text = ""
-        for page_num, page in self._reader.read():
-            text += page.get_text()
-        return text
+        return self._reader.read()
+

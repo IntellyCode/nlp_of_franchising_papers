@@ -1,0 +1,11 @@
+Steps in the Algorithm:
+1. Analyze Pages 2, 3, and 4: Identify the most
+   common font size used for the main text (i.e., introduction or body text).
+2. Extract Text Matching the Main Font Size: From all pages, only extract text
+   that uses the most common font size found in step 1.
+3. Detect Keywords ("references", "bibliography"): Look for words like
+   "references", "bibliography", or their variations.
+4. Check for Boldness: If the reference-related word is found and is bold, identify
+   the section following it as references, footers, or headers.
+5. Filter Text: Keep only the body text that matches the identified font and size,
+   and ignore text in the footers or reference sections.
