@@ -1,5 +1,5 @@
-spaCy
-pymupdf
-numpy
-gensim
-pyldavis
+spaCy==3.8.2
+pymupdf==1.24.11
+numpy==1.26.4
+gensim==4.3.3
+pyldavis==3.4.1
