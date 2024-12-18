@@ -1,12 +1,20 @@
 from typing import List
-
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QFrame, QPushButton, QLabel
+from .entry import Entry
 
 
 class ScrollableList(QWidget):
+    refresh_sgl = pyqtSignal(str)
+
     def __init__(self, items, parent=None):
         super().__init__(parent)
+
+        self.current_index = 0
+        self.entries = []
+        self.setMaximumWidth(500)
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setFocus()
 
         # Main layout for this widget
         layout = QVBoxLayout(self)
@@ -27,9 +35,7 @@ class ScrollableList(QWidget):
         self.scroll_layout.setSpacing(0)
 
         # Populate the list with selectable items
-        for item in items:
-            label = Entry(item, self.scroll_area_content)
-            self.scroll_layout.addWidget(label)
+        self.refresh(items)
 
         self.scroll_area_content.setLayout(self.scroll_layout)
         self.scroll_area.setWidget(self.scroll_area_content)
@@ -38,20 +44,33 @@ class ScrollableList(QWidget):
         layout.addWidget(self.scroll_area)
         self.setLayout(layout)
 
-    def update(self, items) -> None:
-        self.scroll_layout.clear()
+        if self.entries:
+            self.entries[self.current_index].setFocus()
+        self.scroll_area.setFocusPolicy(Qt.NoFocus)
+
+    def _clear_layout(self):
+        self.current_index = 0
+        while self.scroll_layout.count() > 0:
+            item = self.scroll_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+    def refresh(self, items) -> None:
+        self._clear_layout()
+        self.setFocus()
+        self.entries = []
         for item in items:
-            label = Entry(item, self.scroll_area_content)
+            label = Label(item, self.scroll_area_content)
+            label.setFocusPolicy(Qt.StrongFocus)
+            label.clicked.connect(self.refresh_sgl.emit)
             self.scroll_layout.addWidget(label)
-
-class Entry(QLabel):
-    def __init__(self, item, parent=None):
-        super().__init__(item, parent)
-        self.setAlignment(Qt.AlignLeft)
-        self.setContentsMargins(6, 2, 3, 2)
-        self.setStyleSheet("QLabel { background-color: white; } QLabel:hover { background-color: lightblue; }")
-        self.mousePressEvent = lambda event, text=item: self.on_item_selected(text)
+            self.entries.append(label)
 
 
-    def on_item_selected(self, item):
-        print(f"Selected: {item}")
+class Label(Entry):
+    clicked = pyqtSignal(str)
+
+    def on_item_clicked(self, item):
+        self.setFocus()
+        self.clicked.emit(item)
