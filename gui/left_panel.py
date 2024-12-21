@@ -2,7 +2,7 @@ from typing import LiteralString
 
 from gui.panel import Panel
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 import os
 from .scrollable import ScrollableList
 from .dir_tracker import DirectoryTracker
@@ -10,6 +10,8 @@ import numpy as np
 
 
 class LeftPanel(Panel):
+    add_file = pyqtSignal(str)
+
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.open_path = os.path.expanduser("~")
@@ -17,7 +19,7 @@ class LeftPanel(Panel):
         self.sl = ScrollableList(self.get_dirs())
         self.sl.refresh_sgl.connect(self.go_forward)
 
-        self.dt = DirectoryTracker(self,self.open_path)
+        self.dt = DirectoryTracker(self, self.open_path)
         self.dt.home.connect(self.go_home)
         self.dt.backward.connect(self.go_backward)
 
@@ -68,7 +70,6 @@ class LeftPanel(Panel):
         self._refresh()
 
     def go_backward(self):
-        print(self.open_path)
         dir_list = self.open_path.split(sep=os.sep)
         dir_list.pop(-1)
         if len(dir_list) <= 2:
@@ -79,7 +80,7 @@ class LeftPanel(Panel):
 
     def go_forward(self, item):
         if item.endswith('.pdf'):
-            print(f"PDF with name: {item}")
+            self.add_file.emit(os.path.join(self.open_path, item))
         else:
             self.add_path(item)
             self._refresh()

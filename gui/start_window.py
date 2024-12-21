@@ -17,6 +17,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Set up left and right panels
         self.left_panel = LeftPanel(self)
         self.left_panel.setMinimumSize(300, 400)
+        self.left_panel.add_file.connect(self.select_file)
 
         self.right_panel = RightPanel(self)
         self.right_panel.setMinimumSize(300, 400)
@@ -37,4 +38,8 @@ class MainWindow(QtWidgets.QMainWindow):
         msg.setWindowTitle("Settings")
         msg.setText("Settings window placeholder")
         msg.exec_()
+
+    def select_file(self, path):
+        self.right_panel.add_file(path)
+
 

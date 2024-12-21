@@ -10,6 +10,7 @@ class SelectedFiles(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
+        self.setMinimumSize(200, 200)
 
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -22,7 +23,7 @@ class SelectedFiles(QWidget):
     def _refresh(self):
         self.entries = []
         for file in self.files:
-            entry = FileEntry(file.split(sep)[-1], self.layout)
+            entry = FileEntry(file, self)
             self.entries.append(entry)
 
     def add_file(self, file_path):

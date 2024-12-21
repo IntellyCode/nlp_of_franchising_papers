@@ -71,6 +71,6 @@ class ScrollableList(QWidget):
 class Label(Entry):
     clicked = pyqtSignal(str)
 
-    def on_item_clicked(self, item):
+    def on_item_selected(self, item):
         self.setFocus()
         self.clicked.emit(item)
