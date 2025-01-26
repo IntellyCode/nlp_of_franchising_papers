@@ -12,4 +12,3 @@ class ReaderConfig(Config):
             self._config["path"] = path
             return
         raise KeyError("Path key not found in the configuration.")
-

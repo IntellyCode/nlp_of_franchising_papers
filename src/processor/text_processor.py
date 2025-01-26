@@ -1,6 +1,9 @@
 import spacy
 from spacy.language import Language
 from typing import List
+
+from spacy.tokens.token import Token
+
 from src.config import ProcessorConfig
 from logging import getLogger
 logger = getLogger("WFM.TextProcessor")
@@ -47,7 +50,7 @@ class Processor:
         self._doc = self.nlp(raw_text)
         logger.debug("Setting raw text")
 
-    def process(self) -> List[str]:
+    def process(self, stop_words=None) -> List[str]:
         """
         Process the Spacy Doc object by performing the following:
             1. Remove punctuations, numbers, and special characters.
@@ -64,7 +67,7 @@ class Processor:
 
         _text = ""
         for token in self._doc:
-            if not token.is_punct and not token.is_stop and not token.is_digit and token.is_alpha:
+            if not token.is_punct and not token.is_stop and not token.is_digit and token.is_alpha and self._custom_stopwards(token, stop_words):
                 _text += f(token.lemma_) + ' '
 
         doc = self.nlp(_text)
@@ -79,6 +82,12 @@ class Processor:
         logger.debug(f"Processed tokens: {_tokens}")
         return _tokens
 
+    def _custom_stopwards(self, text: Token, stop_wards):
+        if stop_wards is not None:
+            for token in stop_wards:
+                if token in text.text:
+                    return False
+        return True
 
 if __name__ == '__main__':
     conf = ProcessorConfig()
