@@ -4,3 +4,4 @@ numpy<2.0.0, >=1.24.0
 gensim<=4.3.3, >=4.0.0
 pyldavis<=3.4.1
 litstudy
+scikit-learn
