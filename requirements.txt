@@ -5,3 +5,5 @@ gensim<=4.3.3, >=4.0.0
 pyldavis<=3.4.1
 litstudy
 scikit-learn
+dynamic_topic_modeling
+bertopic[spacy]
