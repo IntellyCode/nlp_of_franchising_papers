@@ -19,14 +19,14 @@ class MultiReader:
         self.directory = directory
         self.config = config
         self.pdf_files = self._get_pdf_files(directory)
-        self.texts: List[Optional[str]] = [None] * len(self.pdf_files)  # Placeholder for storing the texts in correct order
+        self.texts: List[Optional[str]] = [None] * len(self.pdf_files)
 
     def _get_pdf_files(self, directory: str):
         """
         Get a sorted list of PDF files from the specified directory.
         """
         pdf_files = [f for f in os.listdir(directory) if f.lower().endswith('.pdf')]
-        pdf_files.sort()  # Sort files alphabetically
+        pdf_files.sort()
         return pdf_files
 
     def _read_pdf(self, pdf_path: str, index: int):
