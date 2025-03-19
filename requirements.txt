@@ -7,3 +7,4 @@ litstudy
 scikit-learn
 dynamic_topic_modeling
 bertopic[spacy]
+hyperopt
