@@ -9,3 +9,4 @@ dynamic_topic_modeling
 bertopic[spacy]~=0.16.4
 hyperopt
 matplotlib~=3.10.0
+jupyter
