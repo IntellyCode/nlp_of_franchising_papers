@@ -1,5 +1,6 @@
 from octis.evaluation_metrics.coherence_metrics import Coherence
 import numpy as np
+from octis.evaluation_metrics.diversity_metrics import TopicDiversity
 
 
 def topic_outlier_loss(num_outliers, num_topics, total_docs, t_target=None, w1=1.0, w2=1.0, desired_docs_per_topic=15):
@@ -71,3 +72,43 @@ def coherence_n_topics_loss(corpus, output, topics):
 
     loss = -(coherence + topic_density)
     return loss
+
+
+def outlier_penalty(x):
+    return 1.5 * np.log(1 + np.exp(50 * x - 10))
+
+
+def coherence_diversity_outlier_loss(corpus, output, topics, weights=(0.5, 0.8, 2.0), topk=15):
+    """
+    Computes a composite loss based on:
+      - Coherence (to be maximized)
+      - Diversity (to be maximized)
+      - Outlier penalty (to be minimized)
+    :param corpus: Tokenised corpus
+    :param output: Topic model output for coherence and diversity metric
+    :param topics: Bert Topics
+    :param weights: Loss function weights for coherence, diversity and outlier penalty
+    :param topk: which words to use for diversity metric
+    :returns: loss and details dictionary
+    """
+    coherence_metric = Coherence(texts=corpus, measure="c_v")
+    coherence_score = coherence_metric.score(output)
+
+    diversity_metric = TopicDiversity(topk=topk)
+    diversity_score = diversity_metric.score(output)
+
+    total_docs = len(topics)
+    outlier_docs = sum(1 for t in topics if t == -1)
+    outlier_ratio = outlier_docs / total_docs
+    outlier_loss = outlier_penalty(outlier_ratio)
+
+    loss = -weights[0] * coherence_score - weights[1] * diversity_score + weights[2] * outlier_loss
+
+    details = {
+        "coherence": coherence_score,
+        "diversity": diversity_score,
+        "outlier_ratio": outlier_ratio,
+        "outlier_penalty": outlier_loss,
+    }
+
+    return loss, details

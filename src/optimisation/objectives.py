@@ -9,11 +9,12 @@ from umap import UMAP
 import torch
 import gc
 
-from .loss_functions import topic_outlier_loss, coherence_loss, outlier_coherence_density_loss, coherence_n_topics_loss
+from .loss_functions import *
+from .util import topic_transform
 
 
 class Objective(ABC):
-    def __init__(self, docs, seed, analyzer="word", gpu=True):
+    def __init__(self, docs, seed, analyzer="word", gpu=True, top_n=20):
         """
         Base objective class.
         """
@@ -26,14 +27,36 @@ class Objective(ABC):
         self.seed = seed
         self.analyzer = analyzer
         self.vectorizer = None
+        self.top_n = top_n
 
-    @abstractmethod
     def __call__(self, hyperparams):
+        np.random.seed(self.seed)
+        try:
+            loss, details = self.calculate(hyperparams)
+            self.vectorizer = None
+            self._clean_up()
+            return {
+                'loss': loss,
+                'status': 'ok',
+                'hyperparams': hyperparams,
+                **details
+            }
+        except Exception as e:
+            print(f"Error with params {hyperparams}: {e}")
+            return {
+                'loss': 1e10,
+                'status': 'ok',
+                'hyperparams': hyperparams,
+                'error': str(e),
+            }
+
+    def calculate(self, hyperparams):
         """
-        This method must be overridden by subclasses.
-        It should take hyperparameters as input and return a dict with at least 'loss' and 'status'.
+        Calculates the loss function
+        :param hyperparams: HyperOpt hyperparameters
+        :return: loss and details dictionary
         """
-        pass
+        raise NotImplementedError("Must be implemented by the subclasses")
 
     def _clean_up(self):
         """
@@ -95,161 +118,87 @@ class Objective(ABC):
             embedding_model=embedding_model,
             vectorizer_model=self.vectorizer,
             verbose=False,
-            calculate_probabilities=calc_prob
+            calculate_probabilities=calc_prob,
+            top_n_words=self.top_n
         )
         topics, probabilities = topic_model.fit_transform(self.docs)
         return topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model
 
 
 class MTObjective(Objective):
-    def __call__(self, hyperparams):
-        np.random.seed(self.seed)
-        try:
-            topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(hyperparams)
+    """
+    Minimise number of Topics and Outliers
+    """
 
-            # Calculate number of outliers and topics
-            num_outliers = topics.count(-1)
-            unique_topics = set(topics)
-            if -1 in unique_topics:
-                unique_topics.remove(-1)
-            num_topics = len(unique_topics)
-            total_docs = len(self.docs)
+    def calculate(self, hyperparams):
+        topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(hyperparams)
 
-            loss = topic_outlier_loss(num_outliers, num_topics, total_docs)
+        num_outliers = topics.count(-1)
+        unique_topics = set(topics)
+        if -1 in unique_topics:
+            unique_topics.remove(-1)
+        num_topics = len(unique_topics)
+        total_docs = len(self.docs)
 
-            # Clean Up
-            del topic_model, hdbscan_model, umap_model, embedding_model
-            self.vectorizer = None
-            self._clean_up()
-
-            return {
-                'loss': loss,
-                'status': 'ok',
-                'hyperparams': hyperparams,
-                'num_topics': num_topics,
-                'num_outliers': num_outliers,
-            }
-        except Exception as e:
-            print(f"Error with params {hyperparams}: {e}")
-            return {
-                'loss': 1e10,
-                'status': 'ok',
-                'hyperparams': hyperparams,
-                'error': str(e),
-            }
+        loss = topic_outlier_loss(num_outliers, num_topics, total_docs)
+        del topic_model, hdbscan_model, umap_model, embedding_model
+        return loss, {
+            "num_outliers": num_outliers,
+        }
 
 
 class CLObjective(Objective):
-    def __init__(self, docs, seed, analyzer="word", gpu=True, top_n=20):
-        super(CLObjective, self).__init__(docs, seed, analyzer, gpu)
-        self.top_n = top_n
-
-    def __call__(self, hyperparams):
-        np.random.seed(self.seed)
-        try:
-            topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(hyperparams)
-
-            topic_dict = topic_model.get_topics()
-            topics = []
-            for topic_id, word_scores in topic_dict.items():
-                if topic_id == -1:
-                    continue
-                top_words = [word for word, score in word_scores][:self.top_n]
-                topics.append(top_words)
-
-            tokenized_docs = [doc.split() for doc in self.docs]
-            print("Topics structure:", topics)
-            loss = coherence_loss(tokenized_docs, {"topics": topics})
-
-            # Clean Up
-            del topic_model, hdbscan_model, umap_model, embedding_model, tokenized_docs
-            self.vectorizer = None
-            self._clean_up()
-
-            return {
-                'loss': loss,
-                'status': 'ok',
-                'hyperparams': hyperparams
-            }
-        except Exception as e:
-            print(f"Error with params {hyperparams}: {e}")
-            return {
-                'loss': 1e10,
-                'status': 'ok',
-                'hyperparams': hyperparams,
-                'error': str(e),
-            }
+    def calculate(self, hyperparams):
+        topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(hyperparams)
+        topic_dict = topic_model.get_topics()
+        tokenized_docs = [doc.split() for doc in self.docs]
+        loss = coherence_loss(tokenized_docs, {"topics": topic_transform(topic_dict, self.top_n)})
+        del topic_model, hdbscan_model, umap_model, embedding_model, tokenized_docs
+        return loss, {}
 
 
-class OCDObjective(CLObjective):
-    def __call__(self, hyperparams):
-        np.random.seed(self.seed)
-        try:
-            topics_bert, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(hyperparams, calc_prob=True)
+class OCDObjective(Objective):
+    def calculate(self, hyperparams):
+        topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(
+            hyperparams, calc_prob=True)
 
-            topic_dict = topic_model.get_topics()
-            topics = []
-            for topic_id, word_scores in topic_dict.items():
-                if topic_id == -1:
-                    continue
-                top_words = [word for word, score in word_scores][:self.top_n]
-                topics.append(top_words)
-
-            tokenized_docs = [doc.split() for doc in self.docs]
-            loss = outlier_coherence_density_loss(tokenized_docs, {"topics": topics}, topics_bert, probabilities)
-
-            # Clean Up
-            del topic_model, hdbscan_model, umap_model, embedding_model, tokenized_docs
-            self.vectorizer = None
-            self._clean_up()
-
-            return {
-                'loss': loss,
-                'status': 'ok',
-                'hyperparams': hyperparams
-            }
-        except Exception as e:
-            print(f"Error with params {hyperparams}: {e}")
-            return {
-                'loss': 1e10,
-                'status': 'ok',
-                'hyperparams': hyperparams,
-                'error': str(e),
-            }
+        topic_dict = topic_model.get_topics()
+        tokenized_docs = [doc.split() for doc in self.docs]
+        loss = outlier_coherence_density_loss(tokenized_docs,
+                                              {"topics": topic_transform(topic_dict, self.top_n)},
+                                              topics,
+                                              probabilities)
+        del topic_model, hdbscan_model, umap_model, embedding_model, tokenized_docs
+        return loss, {}
 
 
-class CNTObjective(CLObjective):
-    def __call__(self, hyperparams):
-        np.random.seed(self.seed)
-        try:
-            topics_bert, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(hyperparams, calc_prob=True)
+class CNTObjective(Objective):
+    def calculate(self, hyperparams):
+        topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(
+            hyperparams, calc_prob=True)
+        topic_dict = topic_model.get_topics()
+        tokenized_docs = [doc.split() for doc in self.docs]
+        loss = coherence_n_topics_loss(tokenized_docs,
+                                       {"topics": topic_transform(topic_dict, self.top_n)},
+                                       topics)
+        del topic_model, hdbscan_model, umap_model, embedding_model, tokenized_docs
+        return loss, {}
 
-            topic_dict = topic_model.get_topics()
-            topics = []
-            for topic_id, word_scores in topic_dict.items():
-                if topic_id == -1:
-                    continue
-                top_words = [word for word, score in word_scores][:self.top_n]
-                topics.append(top_words)
 
-            tokenized_docs = [doc.split() for doc in self.docs]
-            loss = coherence_n_topics_loss(tokenized_docs, {"topics": topics}, topics_bert)
-
-            # Clean Up
-            del topic_model, hdbscan_model, umap_model, embedding_model, tokenized_docs
-            self.vectorizer = None
-            self._clean_up()
-
-            return {
-                'loss': loss,
-                'status': 'ok',
-                'hyperparams': hyperparams
-            }
-        except Exception as e:
-            print(f"Error with params {hyperparams}: {e}")
-            return {
-                'loss': 1e10,
-                'status': 'ok',
-                'hyperparams': hyperparams,
-                'error': str(e),
-            }
+class CDOObjective(Objective):
+    """
+    v1: 1.5 * ln(1 + e^(5x - 5))
+    v2: 1.5 * ln(1 + e^(50x - 10))
+    """
+    def calculate(self, hyperparams):
+        topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(
+            hyperparams, calc_prob=True)
+        topic_dict = topic_model.get_topics()
+        tokenized_docs = [doc.split() for doc in self.docs]
+        loss, details = coherence_diversity_outlier_loss(tokenized_docs,
+                                                         {"topics": topic_transform(topic_dict, self.top_n)},
+                                                         topics,
+                                                         topk=self.top_n)
+        print("Loss and Details", loss, details)
+        del topic_model, hdbscan_model, umap_model, embedding_model, tokenized_docs
+        return loss, details
