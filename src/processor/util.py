@@ -60,3 +60,10 @@ def smart_join(tokens, punct=punctuation):
             text += ' '
         text += token
     return text
+
+
+def lemmatizer(nlp, doc):
+    return [
+        token.lemma_.lower() for token in nlp(doc)
+        if not token.is_punct and not token.is_stop
+    ]

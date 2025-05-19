@@ -78,7 +78,7 @@ def outlier_penalty(x):
     return 1.5 * np.log(1 + np.exp(50 * x - 10))
 
 
-def coherence_diversity_outlier_loss(corpus, output, topics, weights=(0.5, 0.8, 2.0), topk=15):
+def coherence_diversity_outlier_loss(corpus, output, topics, weights=(0.8, 1.5, 1.0), topk=15):
     """
     Computes a composite loss based on:
       - Coherence (to be maximized)
@@ -112,3 +112,18 @@ def coherence_diversity_outlier_loss(corpus, output, topics, weights=(0.5, 0.8, 
     }
 
     return loss, details
+
+
+def inverted_topic_outlier_loss(topics):
+    """
+    Custom loss function that maximises number of topics and minimised number of outliers
+    """
+    unique_topics = set(t for t in topics if t != -1)
+    topic_count = len(unique_topics)
+    topic_density = topic_count / len(topics)
+
+    number_of_outliers = topics.count(-1)
+    outlier_density = number_of_outliers / len(topics)
+
+    loss = topic_density - outlier_density
+    return loss

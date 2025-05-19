@@ -10,7 +10,7 @@ from umap import UMAP
 
 
 class BertModel:
-    def __init__(self, docs, seed, analyzer="word", gpu=True):
+    def __init__(self, docs, seed, analyzer="word", gpu=True, topn=20):
         if torch.cuda.is_available() and gpu:
             torch.cuda.empty_cache()
             self.device = 'cuda'
@@ -22,16 +22,19 @@ class BertModel:
         self.gpu = gpu
         self.vectorizer = None
         self.topic_model = None
+        self.topn = topn
 
     def assemble(self, hyperparams):
         np.random.seed(self.seed)
         # Fit the vectorizer for better topic representation
+        vectorizer_params = hyperparams.get("vectorizer", {})
         self.vectorizer = CountVectorizer(
             stop_words='english',
             analyzer=self.analyzer,
-            min_df=2,
-            max_df=0.95,
+            min_df=vectorizer_params.get("min_df", 2),
+            max_df=vectorizer_params.get("max_df", 0.95),
             ngram_range=(1, 3),
+            tokenizer=vectorizer_params.get("tokenizer", None),
         )
         self.vectorizer.fit(self.docs)
 
@@ -70,7 +73,8 @@ class BertModel:
             hdbscan_model=hdbscan_model,
             embedding_model=embedding_model,
             vectorizer_model=self.vectorizer,
-            verbose=True)
+            verbose=True,
+            top_n_words=self.topn)
 
         # Clean Up
         del hdbscan_model, umap_model, embedding_model

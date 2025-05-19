@@ -14,7 +14,7 @@ from .util import topic_transform
 
 
 class Objective(ABC):
-    def __init__(self, docs, seed, analyzer="word", gpu=True, top_n=20):
+    def __init__(self, docs, seed, analyzer="word", gpu=True, top_n=10):
         """
         Base objective class.
         """
@@ -202,3 +202,16 @@ class CDOObjective(Objective):
         print("Loss and Details", loss, details)
         del topic_model, hdbscan_model, umap_model, embedding_model, tokenized_docs
         return loss, details
+
+
+class ITOObjective(Objective):
+    """
+    Inverted Topic Outlier Loss
+    """
+    def calculate(self, hyperparams):
+        topics, probabilities, topic_model, hdbscan_model, umap_model, embedding_model = self.train(
+            hyperparams, calc_prob=True)
+        loss, details = inverted_topic_outlier_loss(topics)
+        del topic_model, hdbscan_model, umap_model, embedding_model
+        return loss, {}
+
