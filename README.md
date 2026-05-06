@@ -1,11 +1,16 @@
 
-# LDA on PDF Files
+# Topic Modelling on PDF Files
 
 **Version:** Alpha 1.0.0
 
 ## Overview
 
-This project allows you to run Latent Dirichlet Allocation (LDA) on PDF files, utilizing Gensim for modeling and PyLDAvis for visualization. It supports multithreading capabilities to enhance performance and efficiency.
+This project provides topic modelling capabilities on PDF files using two different approaches:
+
+- **Main Branch (LDA)**: Uses Latent Dirichlet Allocation (LDA) with Gensim for modeling and PyLDAvis for visualization
+- **BERT Branch**: Uses BERTopic for neural-based topic discovery and representation
+
+Both implementations support multithreading capabilities to enhance performance and efficiency. Choose the branch that best fits your use case: LDA for traditional probabilistic topic modelling, or BERTopic for state-of-the-art transformer-based topic discovery.
 
 ## Installation
 
@@ -56,3 +61,23 @@ To get started, follow these steps:
 
 - The progress bar currently has some bugs; it only reflects the progress of reading the files. 
 - The visualization process may take some time. If you click "Start" and the console or GUI does not display any errors (Warnings, Critical errors, or General Errors), the process is likely running smoothly.
+
+## Branch Information
+
+### Main Branch (LDA)
+The main branch implements classical Latent Dirichlet Allocation using Gensim. This approach is well-established, interpretable, and works well for traditional topic modelling tasks. Use this branch if you prefer probabilistic topic models with clear hyperparameter control.
+
+### BERT Branch
+The BERT branch implements BERTopic, a modern topic modelling technique that leverages transformer-based language models (BERT) for semantic understanding. BERTopic offers several advantages:
+
+- **Semantic awareness**: Captures semantic meaning through pre-trained transformers
+- **Automatic topic discovery**: Reduces need for manual parameter tuning
+- **Neural embeddings**: Uses contextual embeddings rather than bag-of-words representations
+- **Flexible clustering**: Employs density-based clustering (HDBSCAN) for more natural topic grouping
+
+To use the BERT branch, checkout with:
+```bash
+git checkout bert
+```
+
+Both branches share the same GUI and input pipeline, so switching between them is straightforward. The output format and visualization may differ slightly due to the different underlying algorithms.
